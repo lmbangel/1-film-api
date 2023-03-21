@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"	
 	"log"
 	"encoding/json"
+	"io/ioutil"
 )
 
 type Movie struct {
@@ -67,6 +68,14 @@ func createMovie(writer http.ResponseWriter, request *http.Request){
 
 }
 
+
+func createJsonFile(writer http.ResponseWriter, request *http.Request){
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	file , _ := json.MarshalIndent(movies, "", " ")
+	_ = ioutil.WriteFile("test_file.json", file, 0644)
+}
 /* Main ................................................*/
 
 func main (){
@@ -76,6 +85,17 @@ func main (){
 	router.HandleFunc("/api/v1/movies", createMovie).Methods("POST")
 	router.HandleFunc("/api/v1/movies", getMovies).Methods("GET")
 	router.HandleFunc("/api/v1/movies/{id}", getMovie).Methods("GET")
+
+	router.HandleFunc("/api/v1/write/json", createJsonFile).Methods("GET")
+
+	router.HandleFunc("/api/v1/readfiile", func(writer http.ResponseWriter, request *http.Request){
+		
+		file,_ := ioutil.ReadFile("test_file.json")
+		var movieList []Movie
+		_ = json.Unmarshal([]byte(file), &movieList)
+		_ = json.NewEncoder(writer).Encode(&movieList)
+
+	}).Methods("GET")
 
 	fmt.Println("Starting server at port 8080: ")
 	error := http.ListenAndServe(":8080", router)
