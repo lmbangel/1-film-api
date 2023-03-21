@@ -7,6 +7,8 @@ import (
 	"log"
 	"encoding/json"
 	"io/ioutil"
+	"os"
+	"github.com/joho/godotenv"
 )
 
 type Movie struct {
@@ -21,10 +23,13 @@ func getMovies(writer http.ResponseWriter, request *http.Request){
 
 	if len(movies) == 0 {		
 		var new_movie Movie
-		error := json.Unmarshal([]byte(`{"Title": "Creed 1", "Genre": "Drama", "ID": "1"}`), &new_movie)
-		if error != nil{
-			log.Fatalln("An error has occured: ", error)
-			return
+		env_default_movie, exists := os.LookupEnv("DEFAULT_MOVIE")
+		if exists == true {
+			error := json.Unmarshal([]byte(env_default_movie), &new_movie)
+			if error != nil{
+				log.Fatalln("An error has occured: ", error)
+				return
+			}
 		}
 		movies = append(movies, new_movie)
 	}
@@ -76,6 +81,14 @@ func createJsonFile(writer http.ResponseWriter, request *http.Request){
 	file , _ := json.MarshalIndent(movies, "", " ")
 	_ = ioutil.WriteFile("test_file.json", file, 0644)
 }
+
+func init(){
+	error := godotenv.Load()
+	if error != nil{
+		log.Print(".env file not found.")
+	}
+}
+
 /* Main ................................................*/
 
 func main (){
@@ -98,6 +111,10 @@ func main (){
 	}).Methods("GET")
 
 	fmt.Println("Starting server at port 8080: ")
+	env_default_movie, exists := os.LookupEnv("DEFAULT_MOVIE")
+	if exists == true {
+		fmt.Println(env_default_movie)
+	}
 	error := http.ListenAndServe(":8080", router)
 	if error != nil {
 		log.Fatalln("An error occured listening to server: ", error);
